@@ -10,9 +10,11 @@
 #para acompanhar a execução e identificar erros, construa prints ao longo do código! 
 
 
+from pydoc import describe
 from enlace import *
 import time
 import numpy as np
+import random
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -22,8 +24,26 @@ import numpy as np
 #use uma das 3 opcoes para atribuir à variável a porta usada
 #serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 #serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM11"                  # Windows(variacao de)
+serialName = "COM4"                  # Windows(variacao de)
 
+N = random.randint(10, 30)
+
+commands = {
+    1: b'00 FA 00 00',
+    2: b'00 00 FA 00',
+    3: b'FA 00 00',
+    4: b'00 FA 00',
+    5: b'00 00 FA',
+    6: b'00 FA',
+    7: b'FA 00',
+    8: b'00',
+    9: b'FA'
+}
+
+
+list_commands = [commands[random.randint(1, 9)] for i in range(N)]
+
+print(list_commands)
 
 def main():
     try:
@@ -35,6 +55,11 @@ def main():
     
         # Ativa comunicacao. Inicia os threads e a comunicação seiral 
         com1.enable()
+
+        time.sleep(.2)
+        com1.sendData(b'00')
+        time.sleep(1)
+
         #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
         print("Abriu a comunicação")
         
@@ -45,43 +70,47 @@ def main():
         #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
         
         #txBuffer = imagem em bytes!
-        txBuffer = b'\x12\x13\xAA'  #isso é um array de bytes
-       
-        print("meu array de bytes tem tamanho {}" .format(len(txBuffer)))
-        #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
-       
+        for comm in list_commands:
+            # txBuffer = b'\x12\x13\xAA'  #isso é um array de bytes
+            txBuffer = comm
+        
+            print("meu array de bytes tem tamanho {}" .format(len(txBuffer)))
+            #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
+        
+                
+            #finalmente vamos transmitir os todos. Para isso usamos a funçao sendData que é um método da camada enlace.
+            #faça um print para avisar que a transmissão vai começar.
+            #tente entender como o método send funciona!
+            #Cuidado! Apenas trasmita arrays de bytes!
+                
             
-        #finalmente vamos transmitir os todos. Para isso usamos a funçao sendData que é um método da camada enlace.
-        #faça um print para avisar que a transmissão vai começar.
-        #tente entender como o método send funciona!
-        #Cuidado! Apenas trasmita arrays de bytes!
-               
+            com1.sendData(np.asarray(txBuffer))  #as array apenas como boa pratica para casos de ter uma outra forma de dados
+            
+            # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
+            # O método não deve estar fincionando quando usado como abaixo. deve estar retornando zero. Tente entender como esse método funciona e faça-o funcionar.
+            txSize = com1.tx.getStatus()
+            while txSize == 0:
+                txSize = com1.tx.getStatus()
+            print('enviou = {}' .format(txSize))
+            
+            #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
+            #Observe o que faz a rotina dentro do thread RX
+            #print um aviso de que a recepção vai começar.
+            
+            #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
+            #Veja o que faz a funcao do enlaceRX  getBufferLen
         
-        com1.sendData(np.asarray(txBuffer))  #as array apenas como boa pratica para casos de ter uma outra forma de dados
-          
-        # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
-        # O método não deve estar fincionando quando usado como abaixo. deve estar retornando zero. Tente entender como esse método funciona e faça-o funcionar.
-        txSize = com1.tx.getStatus()
-        print('enviou = {}' .format(txSize))
-        
-        #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
-        #Observe o que faz a rotina dentro do thread RX
-        #print um aviso de que a recepção vai começar.
-        
-        #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
-        #Veja o que faz a funcao do enlaceRX  getBufferLen
-      
-        #acesso aos bytes recebidos
-        txLen = len(txBuffer)
-        rxBuffer, nRx = com1.getData(txLen)
-        print("recebeu {} bytes" .format(len(rxBuffer)))
-        
-        for i in range(len(rxBuffer)):
-            print("recebeu {}" .format(rxBuffer[i]))
-        
+            #acesso aos bytes recebidos
+            txLen = len(txBuffer)
+            # rxBuffer, nRx = com1.getData(txLen)
+            # print("recebeu {} bytes" .format(len(rxBuffer)))
+            
+            # for i in range(len(rxBuffer)):
+            #     print("recebeu {}" .format(rxBuffer[i]))
+            
 
-            
-    
+                
+        
         # Encerra comunicação
         print("-------------------------")
         print("Comunicação encerrada")
