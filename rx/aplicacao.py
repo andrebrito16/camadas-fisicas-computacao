@@ -1,15 +1,16 @@
 #####################################################
 # Camada Física da Computação
-#Carareto
-#11/08/2022
-#Aplicação
+# Carareto
+# 11/08/2022
+# Aplicação
 ####################################################
 
 
-#esta é a camada superior, de aplicação do seu software de comunicação serial UART.
-#para acompanhar a execução e identificar erros, construa prints ao longo do código! 
+# esta é a camada superior, de aplicação do seu software de comunicação serial UART.
+# para acompanhar a execução e identificar erros, construa prints ao longo do código!
 
 
+from mimetypes import common_types
 from enlace import *
 import time
 import numpy as np
@@ -19,81 +20,53 @@ import numpy as np
 #   python -m serial.tools.list_ports
 # se estiver usando windows, o gerenciador de dispositivos informa a porta
 
-#use uma das 3 opcoes para atribuir à variável a porta usada
-#serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
-#serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM11"                  # Windows(variacao de)
+# use uma das 3 opcoes para atribuir à variável a porta usada
+# serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
+serialName = "/dev/cu.usbmodem1442401"  # Mac    (variacao de)
+# serialName = "COM11"                  # Windows(variacao de)
 
 
 def main():
     try:
         print("Iniciou o main")
-        #declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
-        #para declarar esse objeto é o nome da porta.
+        # declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
+        # para declarar esse objeto é o nome da porta.
         com1 = enlace(serialName)
-        
-    
-        # Ativa comunicacao. Inicia os threads e a comunicação seiral 
-        com1.enable()
-        #Se chegamos até aqui, a comunicação foi aberta com sucesso. Faça um print para informar.
-        print("Abriu a comunicação")
-        
-           
-                  
-        #aqui você deverá gerar os dados a serem transmitidos. 
-        #seus dados a serem transmitidos são um array bytes a serem transmitidos. Gere esta lista com o 
-        #nome de txBuffer. Esla sempre irá armazenar os dados a serem enviados.
-        
-        #txBuffer = imagem em bytes!
-        txBuffer = b'\x12\x13\xAA'  #isso é um array de bytes
-       
-        print("meu array de bytes tem tamanho {}" .format(len(txBuffer)))
-        #faça aqui uma conferência do tamanho do seu txBuffer, ou seja, quantos bytes serão enviados.
-       
-            
-        #finalmente vamos transmitir os todos. Para isso usamos a funçao sendData que é um método da camada enlace.
-        #faça um print para avisar que a transmissão vai começar.
-        #tente entender como o método send funciona!
-        #Cuidado! Apenas trasmita arrays de bytes!
-               
-        
-        com1.sendData(np.asarray(txBuffer))  #as array apenas como boa pratica para casos de ter uma outra forma de dados
-          
-        # A camada enlace possui uma camada inferior, TX possui um método para conhecermos o status da transmissão
-        # O método não deve estar fincionando quando usado como abaixo. deve estar retornando zero. Tente entender como esse método funciona e faça-o funcionar.
-        txSize = com1.tx.getStatus()
-        print('enviou = {}' .format(txSize))
-        
-        #Agora vamos iniciar a recepção dos dados. Se algo chegou ao RX, deve estar automaticamente guardado
-        #Observe o que faz a rotina dentro do thread RX
-        #print um aviso de que a recepção vai começar.
-        
-        #Será que todos os bytes enviados estão realmente guardadas? Será que conseguimos verificar?
-        #Veja o que faz a funcao do enlaceRX  getBufferLen
-      
-        #acesso aos bytes recebidos
-        txLen = len(txBuffer)
-        rxBuffer, nRx = com1.getData(txLen)
-        print("recebeu {} bytes" .format(len(rxBuffer)))
-        
-        for i in range(len(rxBuffer)):
-            print("recebeu {}" .format(rxBuffer[i]))
-        
 
-            
-    
-        # Encerra comunicação
+        com1.enable()
+        print("Esperando um byte de sacrifício")
+        com1.getData(1)
+        com1.rx.clearBuffer()
+        time.sleep(1)
+        print("Abriu a comunicação")
+
+        time.sleep(.2)
+
+        # Receeiving the commands
+        rxBufferSize, nRxSize = com1.getData(1)
+        rxBufferSize, nRxSize = com1.getData(
+            int.from_bytes(rxBufferSize, byteorder='big'))
+
+        # Split on \xcc
+        commandsList = rxBufferSize.split(b'\xcc')
+        commandsList.pop()  # Remove delimiter on the end
+        print("Recebido {} comandos".format(len(commandsList)))
+
+        time.sleep(0.5)
+        returnFlag = len(commandsList)
+        returnFlagBytes = returnFlag.to_bytes(1, byteorder='big')
+
+        com1.sendData(returnFlagBytes)
         print("-------------------------")
         print("Comunicação encerrada")
         print("-------------------------")
         com1.disable()
-        
+
     except Exception as erro:
         print("ops! :-\\")
         print(erro)
         com1.disable()
-        
 
-    #so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
+    # so roda o main quando for executado do terminal ... se for chamado dentro de outro modulo nao roda
 if __name__ == "__main__":
     main()
