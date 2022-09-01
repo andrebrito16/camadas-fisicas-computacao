@@ -120,8 +120,10 @@ def main():
     
         #acesso aos bytes recebidos
         txLen = 1 #len(txBuffer)
+        # time.sleep(.2)
         flagIsEmpty = com1.rx.getIsEmpty()
         endtimeStamp = time.time() + 5
+        
         while flagIsEmpty:
             flagIsEmpty = com1.rx.getIsEmpty()
             if time.time() > endtimeStamp:
