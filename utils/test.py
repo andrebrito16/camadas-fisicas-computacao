@@ -1,10 +1,9 @@
 from generatePackages import GeneratePackages
+import numpy as np
 
 # Random message on bytes
-message = b'Hello World!'
+message = b'\xAA'*300*3
 
-numberOfBytes = len(message)
+packages = GeneratePackages(message)
 
-numberOfPackages = (numberOfBytes // 114) + 1
-
-packages = GeneratePackages(numberOfPackages)
+print(packages.packageList[0][1] + packages.packageList[0][2])

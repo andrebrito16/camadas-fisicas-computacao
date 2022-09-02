@@ -1,22 +1,29 @@
 
+from struct import pack
+import numpy as np
+
+
 class GeneratePackages:
 
-    def __init__(self, numberOfPackages) -> None:
-        self.numberOfPackages = numberOfPackages
+    def __init__(self, allBytes) -> None:
+        self.numberOfPackages = (len(allBytes) // 114) + 1
         self.packageList = []
+        self.bytes = allBytes
 
-    def generateHead(self, id: int, payloadSize: int, handshakeFlag: int) -> bytes:
+        self.generateAllPackages()
 
-        # Handshake with 10 bytes
+    def generateHead(self, id: int, payloadSize: int, packageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0) -> bytes:
         byteId = id.to_bytes(1, byteorder='big')
         byteNumberOfPackages = self.numberOfPackages.to_bytes(
-            1, byteorder='big')
-        bytePackageType = b"\x01"
+            2, byteorder='big')
         bytePayloadSize = payloadSize.to_bytes(1, byteorder='big')
         byteHandshakeFlag = handshakeFlag.to_bytes(1, byteorder='big')
+        bytePackageType = packageType.to_bytes(1, byteorder='big')
+        byteVerificationFlag = verificationFlag.to_bytes(1, byteorder='big')
 
         head = byteId + byteNumberOfPackages + bytePackageType + \
-            bytePayloadSize + byteHandshakeFlag + b'\x00'*5
+            bytePayloadSize + byteHandshakeFlag + \
+            byteVerificationFlag + b'\x00'*3
 
         return head
 
@@ -26,10 +33,47 @@ class GeneratePackages:
     def generateEop(self) -> bytes:
         return b'\xFF\xFF\xFF\xFF'
 
-    def generatePackage(self, id: int, packageType: int, payload: bytes, handshakeFlag: int) -> bytes:
-        head = self.generateHead(
-            id, self.numberOfPackages, packageType, len(payload), handshakeFlag)
-        payload = self.generatePayload(payload)
-        package = head + payload + self.generateEop()
+    def generatePackage(self, id: int, packagePayload: bytes) -> bytes:
+        head = self.generateHead(id, len(packagePayload))
+        payload = self.generatePayload(packagePayload)
+        eop = self.generateEop()
+
+        package = head + payload + eop
 
         return package
+
+    def generateAllPackages(self) -> list:
+
+        for i in range(self.numberOfPackages):
+            packagePayload = self.bytes[i*114:min((i+1)*114, len(self.bytes))]
+            package = self.generatePackage(i+1, packagePayload)
+            self.packageList.append(package)
+
+        self.packageList = np.array(self.packageList)
+
+    def generateHandshake(self) -> bytes:
+        head = self.generateHead(0, packageType=0)
+        payload = b''
+        eop = self.generateEop()
+
+        handshake = head + payload + eop
+
+        return handshake
+
+    def itIsOk(self) -> bytes:
+        head = self.generateHead(0, packageType=0, handshakeFlag=1)
+        payload = b''
+        eop = self.generateEop()
+
+        handshake = head + payload + eop
+
+        return handshake
+
+    def packageVerficationFlag(self, flag) -> bytes:
+        head = self.generateHead(0, packageType=2, verificationFlag=flag)
+        payload = b''
+        eop = self.generateEop()
+
+        verificationPackage = head + payload + eop
+
+        return verificationPackage
