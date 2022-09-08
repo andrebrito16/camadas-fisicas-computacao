@@ -10,12 +10,17 @@
 # para acompanhar a execução e identificar erros, construa prints ao longo do código!
 
 
-from pydoc import describe
-from enlace import *
-import time
-import numpy as np
+from struct import pack
+import sys
 import random
-from generatePackages import GeneratePackages
+import numpy as np
+import time
+from enlace import *
+from pydoc import describe
+from time import sleep
+
+from utils_camadas.generatePackages import GeneratePackages
+
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -24,40 +29,16 @@ from generatePackages import GeneratePackages
 
 # use uma das 3 opcoes para atribuir à variável a porta usada
 # serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
-# serialName = "/dev/tty.usbmodem1411" # Mac    (variacao de)
-serialName = "COM4"                  # Windows(variacao de)
-
-N = random.randint(10, 30)
-
-commands = {
-    1: b'\x00\xFA\x00\x00\xCC',
-    2: b'\x00\x00\xFA\x00\xCC',
-    3: b'\xFA\x00\x00\xCC',
-    4: b'\x00\xFA\x00\xCC',
-    5: b'\x00\x00\xFA\xCC',
-    6: b'\x00\xFA\xCC',
-    7: b'\xFA\x00\xCC',
-    8: b'\x00\xCC',
-    9: b'\xFA\xCC'
-}
+serialName = "/dev/cu.usbmodem1442301"  # Mac    (variacao de)
+# serialName = "COM4"                  # Windows(variacao de)
 
 # Carregando imagem em binário
-imageR ="../img_p3.png"
+imageR = "../img_p3.png"
 
 txBuffer = open(imageR, 'rb').read()
 
 message = txBuffer
 
-# total_command = b''
-# for i in range(N):
-#     total_command += commands[random.randint(1, 9)]
-
-# flag = len(total_command).to_bytes(1, byteorder='big')
-# total_command = flag + total_command
-
-# print(N)
-
-# Create GenearePackages object
 packages = GeneratePackages(message)
 
 
@@ -73,16 +54,37 @@ def main():
 
         print("Abriu a comunicação")
 
-        # message = b"\xAA"*189
-
         print(f"Vamos enviar {len(message)} bytes")
 
-        # as array apenas como boa pratica para casos de ter uma outra forma de dados
-
-        print("Iniciando transmissão...")
+        print("Iniciando o hanshake")
+        handshakeMessage = packages.generateHandshake()
+        print(handshakeMessage)
+        com1.sendData(handshakeMessage)
+        sleep(.2)
+        handhsakeResponse, _ = com1.getData(14)
         
 
-        com1.sendData(np.asarray(txBuffer))
+        if (handhsakeResponse[5] == 1):
+            print("Handshake realizado com sucesso")
+            canContinue = True
+        else:
+            canContinue = False
+            print("Handshake não foi iniciado")
+
+        if canContinue:
+            while len(packages.packageList ) != 0:
+                package = packages.getChunkData()
+                print(f"Enviando pacote com id {package[0]}")
+     
+                com1.sendData(package)
+                sleep(.05)
+                response, _ = com1.getData(14)
+                sleep(.2)
+                if (response[6] == 1):
+                    print(f"Pacote {package[0]} enviado com sucesso")
+                else:
+                    print("Pacote não enviado")
+                    packages.recoverLastPackage() # Recupera o último pacote para voltar
 
         # Encerra comunicação
         print("-------------------------")
