@@ -54,7 +54,7 @@ class GeneratePackages:
         self.packageList = deque(np.array(self.packageList))
 
     def generateHandshake(self) -> bytes:
-        head = self.generateHead(id=0, payloadSize=0, packageType=0)
+        head = self.generateHead(0, packageType=0)
         payload = b''
         eop = self.generateEop()
 
@@ -88,3 +88,21 @@ class GeneratePackages:
         if self.lastSendedPackage is not None:
             self.packageList.appendleft(self.lastSendedPackage)
             self.lastSendedPackage = None
+
+    def itIsPackageOk(self) -> bytes:
+        head = self.generateHead(id=0, payloadSize=0, packageType=0, handshakeFlag=0, verificationFlag=1)
+        payload = b''
+        eop = self.generateEop()
+
+        handshake = head + payload + eop
+
+        return handshake
+
+    def itIsPackageNotOk(self) -> bytes:
+        head = self.generateHead(id=0, payloadSize=0, packageType=0, handshakeFlag=0, verificationFlag=0)
+        payload = b''
+        eop = self.generateEop()
+
+        handshake = head + payload + eop
+
+        return handshake
