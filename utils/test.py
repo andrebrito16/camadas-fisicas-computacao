@@ -7,3 +7,5 @@ message = b'\xAA'*300*3
 packages = GeneratePackages(message)
 
 print(packages.packageList[0][1] + packages.packageList[0][2])
+print(packages.getChunkData())
+print(packages.lastSendedPackage)

@@ -1,5 +1,6 @@
 
 from struct import pack
+from collections import deque
 import numpy as np
 
 
@@ -7,8 +8,9 @@ class GeneratePackages:
 
     def __init__(self, allBytes) -> None:
         self.numberOfPackages = (len(allBytes) // 114) + 1
-        self.packageList = []
+        self.packageList = deque() # Create a queue
         self.bytes = allBytes
+        self.lastSendedPackage = None
 
         self.generateAllPackages()
 
@@ -49,7 +51,7 @@ class GeneratePackages:
             package = self.generatePackage(i+1, packagePayload)
             self.packageList.append(package)
 
-        self.packageList = np.array(self.packageList)
+        self.packageList = deque(np.array(self.packageList))
 
     def generateHandshake(self) -> bytes:
         head = self.generateHead(0, packageType=0)
@@ -77,3 +79,12 @@ class GeneratePackages:
         verificationPackage = head + payload + eop
 
         return verificationPackage
+    
+    def getChunkData(self):
+        self.lastSendedPackage = self.packageList.popleft()
+        return self.lastSendedPackage
+    
+    def recoverLastPackage(self):
+        if self.lastSendedPackage is not None:
+            self.packageList.appendleft(self.lastSendedPackage)
+            self.lastSendedPackage = None
