@@ -15,6 +15,7 @@ from enlace import *
 import time
 import numpy as np
 import random
+from generatePackages import GeneratePackages
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -40,24 +41,24 @@ commands = {
     9: b'\xFA\xCC'
 }
 
-# N = 20
-# num_commands = hex(N)
-# print(len(num_commands), str(num_commands).split('b')[1].split('x')[1].replace('\'',''))
+# Carregando imagem em binário
+imageR ="../img_p3.png"
 
-# flagBytes = str(num_commands).split('b')[1].split('x')[1].replace('\'','').upper()
+txBuffer = open(imageR, 'rb').read()
 
-# if len(flagBytes) == 3:
-#     flagBytes = '0' + flagBytes
-# print(flagBytes)
-total_command = b''
-for i in range(N):
-    total_command += commands[random.randint(1, 9)]
-# print(total_command.encode())
-# print(type(len(total_command).to_bytes(1, byteorder='big')))
-# print(len(total_command))
-flag = len(total_command).to_bytes(1, byteorder='big')
-total_command = flag + total_command
-print(N)
+message = txBuffer
+
+# total_command = b''
+# for i in range(N):
+#     total_command += commands[random.randint(1, 9)]
+
+# flag = len(total_command).to_bytes(1, byteorder='big')
+# total_command = flag + total_command
+
+# print(N)
+
+# Create GenearePackages object
+packages = GeneratePackages(message)
 
 
 def main():
@@ -72,11 +73,15 @@ def main():
 
         print("Abriu a comunicação")
 
-        message = b"\xAA"*189
+        # message = b"\xAA"*189
 
         print(f"Vamos enviar {len(message)} bytes")
 
         # as array apenas como boa pratica para casos de ter uma outra forma de dados
+
+        print("Iniciando transmissão...")
+        
+
         com1.sendData(np.asarray(txBuffer))
 
         # Encerra comunicação

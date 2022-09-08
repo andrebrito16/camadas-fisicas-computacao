@@ -1,8 +1,14 @@
 from generatePackages import GeneratePackages
 import numpy as np
 
-# Random message on bytes
-message = b'\xAA'*300*3
+# # Random message on bytes
+# message = b'\xAA'*300*3
+
+imageR ="./img_p3.png"
+
+txBuffer = open(imageR, 'rb').read()
+
+message = txBuffer
 
 packages = GeneratePackages(message)
 
