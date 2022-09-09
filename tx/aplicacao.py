@@ -37,8 +37,23 @@ imageR = "../img_p3.png"
 
 txBuffer = open(imageR, 'rb').read()
 
+# Carregando imagem em binário
+imageR ="../img_p3.png"
+
+txBuffer = open(imageR, 'rb').read()
+
 message = txBuffer
 
+# total_command = b''
+# for i in range(N):
+#     total_command += commands[random.randint(1, 9)]
+
+# flag = len(total_command).to_bytes(1, byteorder='big')
+# total_command = flag + total_command
+
+# print(N)
+
+# Create GenearePackages object
 packages = GeneratePackages(message)
 
 
