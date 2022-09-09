@@ -24,7 +24,7 @@ from utils_camadas.generatePackages import GeneratePackages
 # use uma das 3 opcoes para atribuir à variável a porta usada
 # serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 # serialName = "/dev/cu.usbmodem1442401"  # Mac    (variacao de)
-serialName = "COM5"                  # Windows(variacao de)
+serialName = "COM4"                  # Windows(variacao de)
 handShakeSize = 14
 
 EOP_REF = b'\xFF\xFF\xFF\xFF'
@@ -38,7 +38,7 @@ all_packages = []
 
 
 def main():
-    testCorrompido = False
+    testCorrompido = True
     try:
         print("Iniciou o main")
         # declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
