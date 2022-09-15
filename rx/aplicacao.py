@@ -27,7 +27,7 @@ from utils_camadas.generatePackages import GeneratePackages
 serialName = "COM4"                  # Windows(variacao de)
 handShakeSize = 14
 
-EOP_REF = b'\xFF\xFF\xFF\xFF'
+EOP_REF = b'\xAA\xBB\xCC\xDD'
 headSize = 10
 EOPSize = 4
 
