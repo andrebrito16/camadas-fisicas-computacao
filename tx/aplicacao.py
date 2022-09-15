@@ -29,8 +29,8 @@ from utils_camadas.generatePackages import GeneratePackages
 
 # use uma das 3 opcoes para atribuir à variável a porta usada
 # serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
-serialName = "/dev/cu.usbmodem1442301"  # Mac    (variacao de)
-# serialName = "COM4"                  # Windows(variacao de)
+# serialName = "/dev/cu.usbmodem1442301"  # Mac    (variacao de)
+serialName = "COM4"                  # Windows(variacao de)
 
 # Carregando imagem em binário
 imageR = "../img_p3.png"
@@ -71,22 +71,25 @@ def main():
 
         print(f"Vamos enviar {len(message)} bytes")
 
-        print("Iniciando o hanshake")
-        handshakeMessage = packages.generateHandshake()
-        print(handshakeMessage)
-        com1.sendData(handshakeMessage)
-        sleep(.2)
-        handhsakeResponse, _ = com1.getData(14)
+
+        # First loop
+        inicia = False
+        while not inicia:
+            print("Iniciando o hanshake")
+            handshakeMessage = packages.generateHandshake()
+            print(handshakeMessage)
+            com1.sendData(handshakeMessage)
+            sleep(.2)
+            handhsakeResponse, _ = com1.getData(14)
         
+            if (handhsakeResponse[5] == 1):
+                print("Handshake realizado com sucesso")
+                inicia = True
+            else:
+                inicia = False
+                print("Handshake não foi iniciado")
 
-        if (handhsakeResponse[5] == 1):
-            print("Handshake realizado com sucesso")
-            canContinue = True
-        else:
-            canContinue = False
-            print("Handshake não foi iniciado")
-
-        if canContinue:
+        if inicia:
             while len(packages.packageList ) != 0:
                 package = packages.getChunkData()
                 print(f"Enviando pacote com id {package[0]}")
@@ -95,6 +98,7 @@ def main():
                 sleep(.05)
                 response, _ = com1.getData(14)
                 sleep(.2)
+
                 if (response[6] == 1):
                     print(f"Pacote {package[0]} enviado com sucesso")
                 else:

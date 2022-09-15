@@ -11,29 +11,30 @@ class GeneratePackages:
         self.packageList = deque() # Create a queue
         self.bytes = allBytes
         self.lastSendedPackage = None
-
+        self.CRC = b'\x00' * 2
         self.generateAllPackages()
 
-    def generateHead(self, id: int, payloadSize: int, packageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0) -> bytes:
+    def generateHead(self, id: int, payloadSize: int, fileId: int, packageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0) -> bytes:
         byteId = id.to_bytes(1, byteorder='big')
         byteNumberOfPackages = self.numberOfPackages.to_bytes(
             2, byteorder='big')
         bytePayloadSize = payloadSize.to_bytes(1, byteorder='big')
         byteHandshakeFlag = handshakeFlag.to_bytes(1, byteorder='big')
         bytePackageType = packageType.to_bytes(1, byteorder='big')
+        byteFileId = fileId.to_bytes(1, byteorder='big') if handshakeFlag == 1 else bytePayloadSize
         byteVerificationFlag = verificationFlag.to_bytes(1, byteorder='big')
+        byteRestartFromPackage = restartFromPackage.to_bytes(1, byteorder='big')
+        byteLastSuccessReceivedPackage = lastSuccessReceivedPackage.to_bytes(1, byteorder='big')
 
-        head = byteId + byteNumberOfPackages + bytePackageType + \
-            bytePayloadSize + byteHandshakeFlag + \
-            byteVerificationFlag + b'\x00'*3
-
+        head = bytePackageType + b'\x00' * 2 + byteNumberOfPackages + \
+            byteId + byteFileId + byteRestartFromPackage + byteLastSuccessReceivedPackage + self.CRC
         return head
 
     def generatePayload(self, payload: bytes) -> bytes:
         return payload
 
     def generateEop(self) -> bytes:
-        return b'\xFF\xFF\xFF\xFF'
+        return b'\xAA\xBB\xCC\xDD'
 
     def generatePackage(self, id: int, packagePayload: bytes) -> bytes:
         head = self.generateHead(id, len(packagePayload))
