@@ -18,7 +18,7 @@ class GeneratePackages:
     def generateHead(self, id: int = 0, payloadSize: int = 0, fileId: int = 0, messsageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0) -> bytes:
         byteId = id.to_bytes(1, byteorder='big')
         byteNumberOfPackages = self.numberOfPackages.to_bytes(
-            2, byteorder='big')
+            1, byteorder='big')
         bytePayloadSize = payloadSize.to_bytes(1, byteorder='big')
         byteHandshakeFlag = handshakeFlag.to_bytes(1, byteorder='big')
         byteMesssageType = messsageType.to_bytes(1, byteorder='big')
@@ -110,7 +110,7 @@ class GeneratePackages:
         return handshake
 
     def generateType1(self, fileId: int) -> bytes:
-        head = self.generateHead(messsageType=1, fileId=fileId)
+        head = self.generateHead(messsageType=1, fileId=fileId, handshakeFlag=1)
         eop = self.generateEop()
         package = head + eop
         return package

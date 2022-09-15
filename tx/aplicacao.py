@@ -33,14 +33,14 @@ from utils_camadas.generatePackages import GeneratePackages
 serialName = "COM4"                  # Windows(variacao de)
 
 # Carregando imagem em binário
-imageR = "../img_p3.png"
+imageR = "./img_p3.png"
 
 txBuffer = open(imageR, 'rb').read()
 
 # Carregando imagem em binário
-imageR ="../img_p3.png"
+# imageR ="../img_p3.png"
 
-txBuffer = open(imageR, 'rb').read()
+# txBuffer = open(imageR, 'rb').read()
 
 message = txBuffer
 
@@ -55,7 +55,8 @@ message = txBuffer
 
 # Create GenearePackages object
 packages = GeneratePackages(message)
-
+fileId = 0
+serverId = 7
 
 def main():
     try:
@@ -75,19 +76,16 @@ def main():
         # First loop
         inicia = False
         while not inicia:
-            print("Iniciando o hanshake")
-            handshakeMessage = packages.generateHandshake()
-            print(handshakeMessage)
-            com1.sendData(handshakeMessage)
-            sleep(.2)
-            handhsakeResponse, _ = com1.getData(14)
-        
-            if (handhsakeResponse[5] == 1):
-                print("Handshake realizado com sucesso")
-                inicia = True
-            else:
-                inicia = False
-                print("Handshake não foi iniciado")
+            print("Iniciando o Message Type 1 (quero falar com você)")
+            messageType1 = packages.generateType1(fileId=serverId)
+            print(messageType1, len(messageType1))
+            com1.sendData(messageType1)
+            sleep(5)
+            if not com1.rx.getIsEmpty():
+                messageType2Response, _ = com1.getData(14)
+                if (messageType2Response[5] == 1):
+                    print("Message type 2 recebido com sucesso (servidor na escuta)")
+                    inicia = True
 
         if inicia:
             while len(packages.packageList ) != 0:
