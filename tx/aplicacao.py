@@ -83,6 +83,7 @@ def main():
             sleep(5)
             if not com1.rx.getIsEmpty():
                 messageType2Response, _ = com1.getData(14)
+                
                 if (messageType2Response[5] == 1):
                     print("Message type 2 recebido com sucesso (servidor na escuta)")
                     inicia = True

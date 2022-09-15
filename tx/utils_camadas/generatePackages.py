@@ -116,7 +116,7 @@ class GeneratePackages:
         return package
     
     def generateType2(self):
-        head = self.generateHead(messsageType=2)
+        head = self.generateHead(messsageType=2, fileId=1)
         eop = self.generateEop()
         package = head + eop
         return package
