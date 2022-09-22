@@ -1,4 +1,5 @@
 
+from email import header
 from struct import pack
 from collections import deque
 import numpy as np
@@ -14,19 +15,19 @@ class GeneratePackages:
         self.CRC = b'\x00' * 2
         self.generateAllPackages()
 
-    def generateHead(self, id: int, payloadSize: int, fileId: int, packageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0) -> bytes:
+    def generateHead(self, id: int = 0, payloadSize: int = 0, fileId: int = 0, messsageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0) -> bytes:
         byteId = id.to_bytes(1, byteorder='big')
         byteNumberOfPackages = self.numberOfPackages.to_bytes(
-            2, byteorder='big')
+            1, byteorder='big')
         bytePayloadSize = payloadSize.to_bytes(1, byteorder='big')
         byteHandshakeFlag = handshakeFlag.to_bytes(1, byteorder='big')
-        bytePackageType = packageType.to_bytes(1, byteorder='big')
+        byteMesssageType = messsageType.to_bytes(1, byteorder='big')
         byteFileId = fileId.to_bytes(1, byteorder='big') if handshakeFlag == 1 else bytePayloadSize
         byteVerificationFlag = verificationFlag.to_bytes(1, byteorder='big')
         byteRestartFromPackage = restartFromPackage.to_bytes(1, byteorder='big')
         byteLastSuccessReceivedPackage = lastSuccessReceivedPackage.to_bytes(1, byteorder='big')
 
-        head = bytePackageType + b'\x00' * 2 + byteNumberOfPackages + \
+        head = byteMesssageType + b'\x00' * 2 + byteNumberOfPackages + \
             byteId + byteFileId + byteRestartFromPackage + byteLastSuccessReceivedPackage + self.CRC
         return head
 
@@ -54,8 +55,8 @@ class GeneratePackages:
 
         self.packageList = deque(np.array(self.packageList))
 
-    def generateHandshake(self) -> bytes:
-        head = self.generateHead(0, packageType=0)
+    def generateHandshake(self, fileId) -> bytes:
+        head = self.generateHead(0, fileId=fileId, packageType=0)
         payload = b''
         eop = self.generateEop()
 
@@ -107,3 +108,40 @@ class GeneratePackages:
         handshake = head + payload + eop
 
         return handshake
+
+    def generateType1(self, fileId: int) -> bytes:
+        head = self.generateHead(messsageType=1, fileId=fileId)
+        eop = self.generateEop()
+        package = head + eop
+        return package
+    
+    def generateType2(self):
+        head = self.generateHead(messsageType=2, handshakeFlag=1, fileId=1)
+        eop = self.generateEop()
+        package = head + eop
+        return package
+
+    def generateType3(self, id):
+        payload = self.getChunkData()
+        head = self.generateHead(messsageType=3, id=id, payloadSize=len(payload))
+        eop = self.generateEop()
+        package = head + payload + eop
+        return package
+
+    def generateType4(self, lastSuccessReceivedPackage):
+        head = self.generateHead(messsageType=4, lastSuccessReceivedPackage=lastSuccessReceivedPackage)
+        eop = self.generateEop()
+        package = head + eop
+        return package
+        
+    def generateType5(self):
+        head = self.generateHead(messsageType=5, handshakeFlag=1)
+        eop = self.generateEop()
+        package = head + eop
+        return package
+        
+    def generateType6(self, lastPackage):
+        head = self.generateHead(messsageType=6, lastSuccessReceivedPackage=lastPackage)
+        eop = self.generateEop()
+        package = head + eop
+        return package
