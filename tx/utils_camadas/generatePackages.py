@@ -123,9 +123,8 @@ class GeneratePackages:
 
     def generateType3(self, id):
         payload = self.getChunkData()
-        head = self.generateHead(messsageType=3, id=id, payloadSize=len(payload))
-        eop = self.generateEop()
-        package = head + payload + eop
+        head = self.generateHead(messsageType=3, id=id, payloadSize=payload[5])
+        package = head + payload[10:]
         return package
 
     def generateType4(self, lastSuccessReceivedPackage):

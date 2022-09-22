@@ -13,6 +13,7 @@
 from struct import pack
 import sys
 import random
+from tkinter.tix import NoteBook
 import numpy as np
 import time
 from enlace import *
@@ -83,26 +84,65 @@ def main():
             sleep(5)
             if not com1.rx.getIsEmpty():
                 messageType2Response, _ = com1.getData(14)
-                
+                sleep(0.2)
                 if (messageType2Response[5] == 1):
                     print("Message type 2 recebido com sucesso (servidor na escuta)")
                     inicia = True
 
         if inicia:
-            while len(packages.packageList ) != 0:
-                package = packages.getChunkData()
-                print(f"Enviando pacote com id {package[0]}")
-     
+            count = 1
+            finishCommunication = False
+            while count <= packages.numberOfPackages and not finishCommunication:
+                # Count = (packages.numberPackages - len(packages.packageList)) + 1
+                package = packages.generateType3(id=count)
+                print(f"Enviando pacote com id {package[4]}")
                 com1.sendData(package)
-                sleep(.05)
-                response, _ = com1.getData(14)
+                timer1 = time.time()
+                timer2 = time.time()
+                sleep(.2)
+                flagSended = False
+
+                while not flagSended:
+                    
+                    if not com1.rx.getIsEmpty():
+                        response, _ = com1.getData(14)
+                        sleep(1)
+                        if response[0] == 4 and response[7] == count:
+                            
+                            print(response)
+                            print(f"Recebido pacote com id {response[7]} (OK)")
+                            count = response[7] + 1
+                            flagSended = True
+
+                        elif response[0] == 6:
+                            print("Erro no pacote")
+                            count = response[7]
+                            packages.recoverLastPackage()
+                            package = packages.generateType3(id=count)
+                            com1.sendData(package)
+                            timer1 = time.time()
+                            timer2 = time.time()
+                    else:
+                        if time.time() - timer1 > 5:
+                            packages.recoverLastPackage()
+                            package = packages.generateType3(id=count)
+                            print(f"Enviando pacote com id {package[4]}")
+                            com1.sendData(package)
+                            timer1 = time.time()
+                            if time.time() - timer2 > 20:
+                                mType5 = packages.generateType5()
+                                print("Encerra comunicação :(")
+                                com1.sendData(mType5)
+                                finishCommunication = True
+                                break
+                                
+                    
                 sleep(.2)
 
-                if (response[6] == 1):
-                    print(f"Pacote {package[0]} enviado com sucesso")
-                else:
-                    print("Pacote não enviado")
-                    packages.recoverLastPackage() # Recupera o último pacote para voltar
+            if len(packages.packageList) == 0:
+                print("SUCESSO!!!")
+
+              
 
         # Encerra comunicação
         print("-------------------------")
