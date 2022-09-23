@@ -31,7 +31,7 @@ from utils_camadas.generatePackages import GeneratePackages
 # use uma das 3 opcoes para atribuir à variável a porta usada
 # serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 # serialName = "/dev/cu.usbmodem1442301"  # Mac    (variacao de)
-serialName = "COM4"                  # Windows(variacao de)
+serialName = "COM5"                  # Windows(variacao de)
 
 # Carregando imagem em binário
 imageR = "./img_p3.png"
@@ -58,6 +58,12 @@ message = txBuffer
 packages = GeneratePackages(message)
 fileId = 0
 serverId = 7
+log = ''
+
+def generateLogLine(packageId, packageType, packageSize, packagePayloadSize, packagePayload, packageCRC, packageEop):
+    logLine = f'Package {packageId} - {packageType} - {packageSize} - {packagePayloadSize} - {packagePayload} - {packageCRC} - {packageEop}'
+
+    return logLine
 
 def main():
     try:
@@ -109,7 +115,7 @@ def main():
                         sleep(1)
                         if response[0] == 4 and response[7] == count:
                             
-                            print(response)
+                            # print(response)
                             print(f"Recebido pacote com id {response[7]} (OK)")
                             count = response[7] + 1
                             flagSended = True
