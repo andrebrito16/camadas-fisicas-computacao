@@ -15,6 +15,7 @@ from enlace import *
 import time
 import numpy as np
 from utils_camadas.generatePackages import GeneratePackages
+from utils_camadas.generateLog import GenerateLog
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -32,6 +33,7 @@ headSize = 10
 EOPSize = 4
 
 all_packages = []
+log_generate = GenerateLog()
 
 packages = GeneratePackages(b'\x00')
 
@@ -55,17 +57,18 @@ def main():
                 msgt1, _ = com1.getData(14)
                 # Verifica se a mensagem é para esse server
                 if msgt1[5] == serverId:
-
                     print("Recebi uma mensagem que é para este server!")
                     ocioso = False
                     totalNumberOfPackages = msgt1[3] # VER ISSO AQUI  
                     print("Total de pacotes: ", totalNumberOfPackages)              
+                    log_generate.generateLine('receb', msgt1[0], len(msgt1), 0, totalNumberOfPackages)
                 time.sleep(1)
         
         # Envia uma mensagem do tipo 2 quando deixa de ser ocioso
         msgt2 = packages.generateType2()
         cont = 1
         com1.sendData(msgt2)
+        log_generate.generateLine('envio', msgt2[0], len(msgt2), 0, totalNumberOfPackages)
         time.sleep(.2)
         stopProcess = False
        
@@ -85,7 +88,9 @@ def main():
                     
                 if now - timer1 > 2:
                     send_again = cont - 1 if cont > 1 else 1
-                    com1.sendData(packages.generateType4(lastSuccessReceivedPackage=send_again))
+                    request_package_msg = packages.generateType4(lastSuccessReceivedPackage=send_again)
+                    com1.sendData(request_package_msg)
+                    log_generate.generateLine('envio', 4, len(request_package_msg), request_package_msg[4], totalNumberOfPackages)
                     print("Reenvia o pacote ", cont)
                     timer1 = time.time()
 
@@ -95,10 +100,12 @@ def main():
                 payload, _ = com1.getData(head[5])
                 all_packages.append(payload)
                 eop, _ = com1.getData(4)
+                log_generate.generateLine('receb', 3, len(payload) + 14, head[4], totalNumberOfPackages)
                 if eop == EOP_REF:
                     type4 = packages.generateType4(cont)
                     print(f"Type 4 7: {type4[7]} - CONTADOR: {cont}")
                     com1.sendData(type4)
+                    log_generate.generateLine('envio', 4, len(type4), type4[4], totalNumberOfPackages)
                     if head[4] == cont:
                         cont = head[4] + 1
                         
@@ -113,7 +120,9 @@ def main():
                 print("Comunicação encerrada!")
                 break
         
-        print("Processo encerrado!")
+        print("Salvando log...")
+        log_generate.save_log()
+        print("Comunicação encerrada")
         # Save image
         with open("img_recebida.png", "wb") as f:
             f.write(b''.join(all_packages))
