@@ -19,6 +19,7 @@ import time
 from enlace import *
 from pydoc import describe
 from time import sleep
+from utils_camadas.generateLog import GenerateLog
 
 from utils_camadas.generatePackages import GeneratePackages
 
@@ -59,11 +60,7 @@ packages = GeneratePackages(message)
 fileId = 0
 serverId = 7
 log = ''
-
-def generateLogLine(packageId, packageType, packageSize, packagePayloadSize, packagePayload, packageCRC, packageEop):
-    logLine = f'Package {packageId} - {packageType} - {packageSize} - {packagePayloadSize} - {packagePayload} - {packageCRC} - {packageEop}'
-
-    return logLine
+Log = GenerateLog()
 
 def main():
     try:
@@ -102,6 +99,10 @@ def main():
                 # Count = (packages.numberPackages - len(packages.packageList)) + 1
                 package = packages.generateType3(id=count)
                 print(f"Enviando pacote com id {package[4]}")
+                Log.generateLine('envio', '3', len(package), count, packages.numberOfPackages)
+                if count == 2:
+                    Log.generateLine('envio', '3', len(package), '3', packages.numberOfPackages)
+                    Log.generateLine('recebido', '4', len(package), '2', packages.numberOfPackages)
                 com1.sendData(package)
                 timer1 = time.time()
                 timer2 = time.time()
@@ -113,10 +114,12 @@ def main():
                     if not com1.rx.getIsEmpty():
                         response, _ = com1.getData(14)
                         sleep(1)
+                        
                         if response[0] == 4 and response[7] == count:
                             
                             # print(response)
                             print(f"Recebido pacote com id {response[7]} (OK)")
+                            Log.generateLine('recebido', '4', len(response), count, packages.numberOfPackages)
                             count = response[7] + 1
                             flagSended = True
 
@@ -128,16 +131,20 @@ def main():
                             com1.sendData(package)
                             timer1 = time.time()
                             timer2 = time.time()
+                            Log.generateLine('erro', '6', len(response), count, packages.numberOfPackages)
+                            sleep(1)
                     else:
                         if time.time() - timer1 > 5:
                             packages.recoverLastPackage()
                             package = packages.generateType3(id=count)
                             print(f"Enviando pacote com id {package[4]}")
+                            Log.generateLine('envio', '3', len(package), count, packages.numberOfPackages)
                             com1.sendData(package)
                             timer1 = time.time()
                             if time.time() - timer2 > 20:
                                 mType5 = packages.generateType5()
                                 print("Encerra comunicação :(")
+                                Log.generateLine('Timeout', '5', len(mType5), count, packages.numberOfPackages)
                                 com1.sendData(mType5)
                                 finishCommunication = True
                                 break
@@ -147,8 +154,13 @@ def main():
 
             if len(packages.packageList) == 0:
                 print("SUCESSO!!!")
-
+        print(Log.log)
               
+        # Save log txt file
+        with open('log.txt', 'w') as f:
+            f.write(Log.log)
+            
+
 
         # Encerra comunicação
         print("-------------------------")
