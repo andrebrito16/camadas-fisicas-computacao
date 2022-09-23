@@ -13,6 +13,7 @@
 from struct import pack
 import sys
 import random
+from tkinter.tix import NoteBook
 import numpy as np
 import time
 from enlace import *
@@ -30,17 +31,17 @@ from utils_camadas.generatePackages import GeneratePackages
 # use uma das 3 opcoes para atribuir à variável a porta usada
 # serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
 # serialName = "/dev/cu.usbmodem1442301"  # Mac    (variacao de)
-serialName = "COM4"                  # Windows(variacao de)
+serialName = "COM5"                  # Windows(variacao de)
 
 # Carregando imagem em binário
-imageR = "../img_p3.png"
+imageR = "./img_p3.png"
 
 txBuffer = open(imageR, 'rb').read()
 
 # Carregando imagem em binário
-imageR ="../img_p3.png"
+# imageR ="../img_p3.png"
 
-txBuffer = open(imageR, 'rb').read()
+# txBuffer = open(imageR, 'rb').read()
 
 message = txBuffer
 
@@ -55,7 +56,14 @@ message = txBuffer
 
 # Create GenearePackages object
 packages = GeneratePackages(message)
+fileId = 0
+serverId = 7
+log = ''
 
+def generateLogLine(packageId, packageType, packageSize, packagePayloadSize, packagePayload, packageCRC, packageEop):
+    logLine = f'Package {packageId} - {packageType} - {packageSize} - {packagePayloadSize} - {packagePayload} - {packageCRC} - {packageEop}'
+
+    return logLine
 
 def main():
     try:
@@ -95,15 +103,52 @@ def main():
                 print(f"Enviando pacote com id {package[0]}")
      
                 com1.sendData(package)
-                sleep(.05)
-                response, _ = com1.getData(14)
+                timer1 = time.time()
+                timer2 = time.time()
+                sleep(.2)
+                flagSended = False
+
+                while not flagSended:
+                    
+                    if not com1.rx.getIsEmpty():
+                        response, _ = com1.getData(14)
+                        sleep(1)
+                        if response[0] == 4 and response[7] == count:
+                            
+                            # print(response)
+                            print(f"Recebido pacote com id {response[7]} (OK)")
+                            count = response[7] + 1
+                            flagSended = True
+
+                        elif response[0] == 6:
+                            print("Erro no pacote")
+                            count = response[7]
+                            packages.recoverLastPackage()
+                            package = packages.generateType3(id=count)
+                            com1.sendData(package)
+                            timer1 = time.time()
+                            timer2 = time.time()
+                    else:
+                        if time.time() - timer1 > 5:
+                            packages.recoverLastPackage()
+                            package = packages.generateType3(id=count)
+                            print(f"Enviando pacote com id {package[4]}")
+                            com1.sendData(package)
+                            timer1 = time.time()
+                            if time.time() - timer2 > 20:
+                                mType5 = packages.generateType5()
+                                print("Encerra comunicação :(")
+                                com1.sendData(mType5)
+                                finishCommunication = True
+                                break
+                                
+                    
                 sleep(.2)
 
-                if (response[6] == 1):
-                    print(f"Pacote {package[0]} enviado com sucesso")
-                else:
-                    print("Pacote não enviado")
-                    packages.recoverLastPackage() # Recupera o último pacote para voltar
+            if len(packages.packageList) == 0:
+                print("SUCESSO!!!")
+
+              
 
         # Encerra comunicação
         print("-------------------------")
