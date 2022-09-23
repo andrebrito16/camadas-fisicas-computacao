@@ -45,6 +45,7 @@ def main():
 
         com1.enable()
         # byte de sacrificio
+        log_lines = ''
         print("ESTADO: OCIOSO")
         ocioso = True
         while ocioso:
@@ -54,6 +55,7 @@ def main():
                 msgt1, _ = com1.getData(14)
                 # Verifica se a mensagem é para esse server
                 if msgt1[5] == serverId:
+
                     print("Recebi uma mensagem que é para este server!")
                     ocioso = False
                     totalNumberOfPackages = msgt1[3] # VER ISSO AQUI  
@@ -82,7 +84,8 @@ def main():
                     break
                     
                 if now - timer1 > 2:
-                    com1.sendData(packages.generateType4(lastSuccessReceivedPackage=cont))
+                    send_again = cont - 1 if cont > 1 else 1
+                    com1.sendData(packages.generateType4(lastSuccessReceivedPackage=send_again))
                     print("Reenvia o pacote ", cont)
                     timer1 = time.time()
 
