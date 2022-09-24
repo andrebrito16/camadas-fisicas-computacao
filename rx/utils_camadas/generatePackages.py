@@ -1,4 +1,5 @@
 
+from email import header
 from struct import pack
 from collections import deque
 import numpy as np
@@ -17,7 +18,7 @@ class GeneratePackages:
     def generateHead(self, id: int, payloadSize: int, fileId: int, packageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0) -> bytes:
         byteId = id.to_bytes(1, byteorder='big')
         byteNumberOfPackages = self.numberOfPackages.to_bytes(
-            2, byteorder='big')
+            1, byteorder='big')
         bytePayloadSize = payloadSize.to_bytes(1, byteorder='big')
         byteHandshakeFlag = handshakeFlag.to_bytes(1, byteorder='big')
         bytePackageType = packageType.to_bytes(1, byteorder='big')
@@ -54,8 +55,8 @@ class GeneratePackages:
 
         self.packageList = deque(np.array(self.packageList))
 
-    def generateHandshake(self) -> bytes:
-        head = self.generateHead(0, packageType=0)
+    def generateHandshake(self, fileId) -> bytes:
+        head = self.generateHead(0, fileId=fileId, packageType=0)
         payload = b''
         eop = self.generateEop()
 
@@ -107,3 +108,40 @@ class GeneratePackages:
         handshake = head + payload + eop
 
         return handshake
+
+    def generateType1(self, fileId: int) -> bytes:
+        head = self.generateHead(messsageType=1, fileId=fileId)
+        eop = self.generateEop()
+        package = head + eop
+        return package
+    
+    def generateType2(self):
+        head = self.generateHead(messsageType=2, handshakeFlag=1, fileId=1)
+        eop = self.generateEop()
+        package = head + eop
+        return package
+
+    def generateType3(self, id):
+        payload = self.getChunkData()
+        head = self.generateHead(messsageType=3, id=id, payloadSize=len(payload))
+        eop = self.generateEop()
+        package = head + payload + eop
+        return package
+
+    def generateType4(self, lastSuccessReceivedPackage):
+        head = self.generateHead(messsageType=4, lastSuccessReceivedPackage=lastSuccessReceivedPackage)
+        eop = self.generateEop()
+        package = head + eop
+        return package
+        
+    def generateType5(self):
+        head = self.generateHead(messsageType=5, handshakeFlag=1)
+        eop = self.generateEop()
+        package = head + eop
+        return package
+        
+    def generateType6(self, lastPackage):
+        head = self.generateHead(messsageType=6, lastSuccessReceivedPackage=lastPackage)
+        eop = self.generateEop()
+        package = head + eop
+        return package
