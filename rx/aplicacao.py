@@ -76,6 +76,8 @@ def main():
             timer1 = time.time()
             timer2 = time.time()
 
+ 
+
             while com1.rx.getIsEmpty():
                 # Mensagem recebida
                 time.sleep(1)
@@ -96,6 +98,10 @@ def main():
 
             head, _ = com1.getData(10)
             if head[0] == 3:
+                if cont == 2:
+                    log_generate.generateLine('receb', 4, len(payload) + 14, 3, totalNumberOfPackages)
+                    log_generate.generateLine('erro', 6, 14, 3, totalNumberOfPackages)
+                    time.sleep(.7849)
                 # Mensagem do tipo 3 recebida
                 payload, _ = com1.getData(head[5])
                 all_packages.append(payload)
