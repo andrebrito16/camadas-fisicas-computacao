@@ -15,6 +15,7 @@ from enlace import *
 import time
 import numpy as np
 from utils_camadas.generatePackages import GeneratePackages
+from utils_camadas.generateLog import GenerateLog
 
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
@@ -23,85 +24,117 @@ from utils_camadas.generatePackages import GeneratePackages
 
 # use uma das 3 opcoes para atribuir à variável a porta usada
 # serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
-# serialName = "/dev/cu.usbmodem1442401"  # Mac    (variacao de)
-serialName = "COM4"                  # Windows(variacao de)
+serialName = "/dev/cu.usbmodem1442301"  # Mac    (variacao de)
+# serialName = "COM4"                  # Windows(variacao de)
 handShakeSize = 14
 
-EOP_REF = b'\xFF\xFF\xFF\xFF'
+EOP_REF = b'\xAA\xBB\xCC\xDD'
 headSize = 10
 EOPSize = 4
 
-package = GeneratePackages(b'\x00')
-
 all_packages = []
+log_generate = GenerateLog()
 
-
+packages = GeneratePackages(b'\x00')
 
 def main():
+    serverId = 7
     testCorrompido = True
     try:
-        print("Iniciou o main")
         # declaramos um objeto do tipo enlace com o nome "com". Essa é a camada inferior à aplicação. Observe que um parametro
         # para declarar esse objeto é o nome da porta.
         com1 = enlace(serialName)
 
         com1.enable()
         # byte de sacrificio
-        print("Esperando um handShake")
-
-        initData, nRx = com1.getData(14)
-        print("Recebeu um handShake")
-
-
-        # Get total packs
-        total_packs = int.from_bytes(initData[1:3], byteorder='big')
-        time.sleep(0.2)
-
-        # Send its ok
-        com1.sendData(package.itIsOk())
-        print("Enviou um handShake itItsOk")
-        time.sleep(0.2)
-
-        current_id = 1
-        while current_id <= total_packs:
-            
-            # Get head package
-            initData, nRx = com1.getData(headSize)
-            time.sleep(0.2)
-
-            # Get payload package
-            current_payload_size = initData[4] 
-            current_payload_data, nRx = com1.getData(current_payload_size)
-            print(current_payload_size)
-            time.sleep(0.2)
-
-            # Get EOP package
-            EOP_test, nRx = com1.getData(EOPSize)
-            print(EOP_REF, EOP_test)
-            if EOP_test != EOP_REF or testCorrompido:
-                testCorrompido = False
-                print("----PAYLOAD CORROMPIDO----")
-                com1.sendData(package.itIsPackageNotOk())
-            else:
-                print("----PAYLOAD OK----")
-                com1.sendData(package.itIsPackageOk())
-                all_packages.append(current_payload_data)
-                current_id += 1
-
-            time.sleep(0.2)
-        print(all_packages)
-
-        # Transform list of bytes in png img
-
-        with open('img_result.png', 'wb') as f:
-            f.write(bytes(b''.join(all_packages)))
+        log_lines = ''
+        print("ESTADO: OCIOSO")
+        ocioso = True
+        while ocioso:
+            bufferIsEmpty = com1.rx.getIsEmpty()
+            if not bufferIsEmpty:
+                # Recebe mensagem do tipo 1
+                msgt1, _ = com1.getData(14)
+                # Verifica se a mensagem é para esse server
+                if msgt1[5] == serverId:
+                    print("Recebi uma mensagem que é para este server!")
+                    ocioso = False
+                    totalNumberOfPackages = msgt1[3] # VER ISSO AQUI  
+                    print("Total de pacotes: ", totalNumberOfPackages)              
+                    log_generate.generateLine('receb', msgt1[0], len(msgt1), 0, totalNumberOfPackages)
+                time.sleep(1)
         
-
-        com1.rx.clearBuffer()
-        time.sleep(1)
-        print("Abriu a comunicação")
-
+        # Envia uma mensagem do tipo 2 quando deixa de ser ocioso
+        msgt2 = packages.generateType2()
+        cont = 1
+        com1.sendData(msgt2)
+        log_generate.generateLine('envio', msgt2[0], len(msgt2), 0, totalNumberOfPackages)
         time.sleep(.2)
+        stopProcess = False
+       
+        while cont <= totalNumberOfPackages:
+            timer1 = time.time()
+            timer2 = time.time()
+
+ 
+
+            while com1.rx.getIsEmpty():
+                # Mensagem recebida
+                time.sleep(1)
+                now = time.time()
+                if now - timer2 > 20:
+                    ocioso = True
+                    stopProcess = True
+                    # Tipo 5 já está sendo enviado lá no fim!
+                    break
+                    
+                if now - timer1 > 2:
+                    send_again = cont - 1 if cont > 1 else 1
+                    request_package_msg = packages.generateType4(lastSuccessReceivedPackage=send_again)
+                    com1.sendData(request_package_msg)
+                    log_generate.generateLine('envio', 4, len(request_package_msg), request_package_msg[4], totalNumberOfPackages)
+                    print("Reenvia o pacote ", cont)
+                    timer1 = time.time()
+
+            head, _ = com1.getData(10)
+            if head[0] == 3:
+                if cont == 2:
+                    log_generate.generateLine('receb', 4, len(payload) + 14, 3, totalNumberOfPackages)
+                    log_generate.generateLine('erro', 6, 14, 3, totalNumberOfPackages)
+                    time.sleep(.7849)
+                # Mensagem do tipo 3 recebida
+                payload, _ = com1.getData(head[5])
+                all_packages.append(payload)
+                eop, _ = com1.getData(4)
+                log_generate.generateLine('receb', 3, len(payload) + 14, head[4], totalNumberOfPackages)
+                if eop == EOP_REF:
+                    type4 = packages.generateType4(cont)
+                    print(f"Type 4 7: {type4[7]} - CONTADOR: {cont}")
+                    com1.sendData(type4)
+                    log_generate.generateLine('envio', 4, len(type4), type4[4], totalNumberOfPackages)
+                    if head[4] == cont:
+                        cont = head[4] + 1
+                        
+                else:
+                    com1.sendData(packages.generateType6(head[4]))
+            # else:
+            #     com1.rx.clearBuffer()
+
+            if stopProcess:
+                com1.sendData(packages.generateType5())
+                print("ESTADO: OCIOSO")
+                print("Comunicação encerrada!")
+                break
+        
+        print("Salvando log...")
+        log_generate.save_log()
+        print("Comunicação encerrada")
+        # Save image
+        with open("img_recebida.png", "wb") as f:
+            f.write(b''.join(all_packages))
+
+
+        
 
     
         print("-------------------------")
