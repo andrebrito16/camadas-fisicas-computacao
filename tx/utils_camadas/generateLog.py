@@ -8,6 +8,5 @@ class GenerateLog():
     def generateLine(self, msg, msgType, packageSize, sendedPackage, totalPackages, CRC='FFA2') -> str:
         time = datetime.now()
         self.log += f'{time} / {msg} / {msgType} / {packageSize} / {sendedPackage} / {totalPackages} / {CRC}\n'
-
     
 
