@@ -59,8 +59,6 @@ message = txBuffer
 packages = GeneratePackages(message)
 fileId = 0
 serverId = 7
-log = ''
-
 Log = GenerateLog()
 
 def main():
