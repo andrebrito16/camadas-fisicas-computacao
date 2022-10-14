@@ -15,20 +15,20 @@ class GeneratePackages:
         self.lastSendedPackage = None
         self.generateAllPackages()
 
-    def generateHead(self, id: int, payloadSize: int, fileId: int, packageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0, crc = 0) -> bytes:
+    def generateHead(self, id: int = 0, payloadSize: int = 0, fileId: int = 0, messsageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0, crc=0) -> bytes:
         byteId = id.to_bytes(1, byteorder='big')
         byteNumberOfPackages = self.numberOfPackages.to_bytes(
             1, byteorder='big')
         bytePayloadSize = payloadSize.to_bytes(1, byteorder='big')
         byteHandshakeFlag = handshakeFlag.to_bytes(1, byteorder='big')
-        bytePackageType = packageType.to_bytes(1, byteorder='big')
+        byteMesssageType = messsageType.to_bytes(1, byteorder='big')
         byteFileId = fileId.to_bytes(1, byteorder='big') if handshakeFlag == 1 else bytePayloadSize
         byteVerificationFlag = verificationFlag.to_bytes(1, byteorder='big')
         byteCRC = crc.to_bytes(2, byteorder='big')
         byteRestartFromPackage = restartFromPackage.to_bytes(1, byteorder='big')
         byteLastSuccessReceivedPackage = lastSuccessReceivedPackage.to_bytes(1, byteorder='big')
 
-        head = bytePackageType + b'\x00' * 2 + byteNumberOfPackages + \
+        head = byteMesssageType + b'\x00' * 2 + byteNumberOfPackages + \
             byteId + byteFileId + byteRestartFromPackage + byteLastSuccessReceivedPackage + byteCRC
         return head
 

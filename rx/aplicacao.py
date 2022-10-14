@@ -24,7 +24,7 @@ from PyCRC.CRC16 import CRC16
 
 # use uma das 3 opcoes para atribuir à variável a porta usada
 # serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
-serialName = "/dev/cu.usbmodem1442301"  # Mac    (variacao de)
+serialName = "/dev/cu.usbmodem1412401"  # Mac    (variacao de)
 # serialName = "COM4"                  # Windows(variacao de)
 handShakeSize = 14
 
