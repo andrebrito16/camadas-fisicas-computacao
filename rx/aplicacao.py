@@ -16,7 +16,7 @@ import time
 import numpy as np
 from utils_camadas.generatePackages import GeneratePackages
 from utils_camadas.generateLog import GenerateLog
-
+from PyCRC.CRC16 import CRC16
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
 #   python -m serial.tools.list_ports
@@ -107,7 +107,10 @@ def main():
                 all_packages.append(payload)
                 eop, _ = com1.getData(4)
                 log_generate.generateLine('receb', 3, len(payload) + 14, head[4], totalNumberOfPackages)
-                if eop == EOP_REF:
+                # Validate CRC
+                rawCRC = head[8:9]
+                expectedCrc = CRC16().calculate(payload).to_bytes(2, byteorder='big')[:-1]
+                if eop == EOP_REF and rawCRC == expectedCrc:
                     type4 = packages.generateType4(cont)
                     print(f"Type 4 7: {type4[7]} - CONTADOR: {cont}")
                     com1.sendData(type4)

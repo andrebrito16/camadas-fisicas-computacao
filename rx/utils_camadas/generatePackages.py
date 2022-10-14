@@ -3,6 +3,7 @@ from email import header
 from struct import pack
 from collections import deque
 import numpy as np
+from PyCRC.CRC16 import CRC16
 
 
 class GeneratePackages:
@@ -12,10 +13,9 @@ class GeneratePackages:
         self.packageList = deque() # Create a queue
         self.bytes = allBytes
         self.lastSendedPackage = None
-        self.CRC = b'\x00' * 2
         self.generateAllPackages()
 
-    def generateHead(self, id: int, payloadSize: int, fileId: int, packageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0) -> bytes:
+    def generateHead(self, id: int, payloadSize: int, fileId: int, packageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0, crc = 0) -> bytes:
         byteId = id.to_bytes(1, byteorder='big')
         byteNumberOfPackages = self.numberOfPackages.to_bytes(
             1, byteorder='big')
@@ -24,11 +24,12 @@ class GeneratePackages:
         bytePackageType = packageType.to_bytes(1, byteorder='big')
         byteFileId = fileId.to_bytes(1, byteorder='big') if handshakeFlag == 1 else bytePayloadSize
         byteVerificationFlag = verificationFlag.to_bytes(1, byteorder='big')
+        byteCRC = crc.to_bytes(2, byteorder='big')
         byteRestartFromPackage = restartFromPackage.to_bytes(1, byteorder='big')
         byteLastSuccessReceivedPackage = lastSuccessReceivedPackage.to_bytes(1, byteorder='big')
 
         head = bytePackageType + b'\x00' * 2 + byteNumberOfPackages + \
-            byteId + byteFileId + byteRestartFromPackage + byteLastSuccessReceivedPackage + self.CRC
+            byteId + byteFileId + byteRestartFromPackage + byteLastSuccessReceivedPackage + byteCRC
         return head
 
     def generatePayload(self, payload: bytes) -> bytes:
@@ -123,9 +124,10 @@ class GeneratePackages:
 
     def generateType3(self, id):
         payload = self.getChunkData()
-        head = self.generateHead(messsageType=3, id=id, payloadSize=len(payload))
-        eop = self.generateEop()
-        package = head + payload + eop
+        # Generate CRC
+        generatedCRC = CRC16.calculate(payload)
+        head = self.generateHead(messsageType=3, id=id, payloadSize=payload[5], crc=generatedCRC)
+        package = head + payload[10:]
         return package
 
     def generateType4(self, lastSuccessReceivedPackage):
