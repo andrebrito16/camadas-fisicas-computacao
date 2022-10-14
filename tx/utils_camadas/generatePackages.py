@@ -29,7 +29,9 @@ class GeneratePackages:
         byteLastSuccessReceivedPackage = lastSuccessReceivedPackage.to_bytes(1, byteorder='big')
 
         head = byteMesssageType + b'\x00' * 2 + byteNumberOfPackages + \
-            byteId + byteFileId + byteRestartFromPackage + byteLastSuccessReceivedPackage + byteCRC
+            byteId + byteFileId + byteRestartFromPackage + byteLastSuccessReceivedPackage + byteCRC[0].to_bytes(1, byteorder='big') + byteCRC[1].to_bytes(1, byteorder='big')
+                
+        print(f"HEAD    : {head}")
         return head
 
     def generatePayload(self, payload: bytes) -> bytes:
@@ -125,7 +127,8 @@ class GeneratePackages:
     def generateType3(self, id):
         payload = self.getChunkData()
         # Generate CRC
-        generatedCRC = CRC16.calculate(payload)
+        generatedCRC = CRC16().calculate(payload)
+        print(f"Generated Payload: {payload}")
         head = self.generateHead(messsageType=3, id=id, payloadSize=payload[5], crc=generatedCRC)
         package = head + payload[10:]
         return package
