@@ -12,7 +12,7 @@ class GeneratePackages:
         self.numberOfPackages = (len(allBytes) // 114) + 1
         self.packageList = deque() # Create a queue
         self.bytes = allBytes
-        self.lastSendedPackage = None
+        self.lastSendedPackage = b"\x00"*10
         self.generateAllPackages()
 
     def generateHead(self, id: int = 0, payloadSize: int = 0, fileId: int = 0, messsageType: int = 1, handshakeFlag: int = 0, verificationFlag: int = 0, restartFromPackage: int = 0, lastSuccessReceivedPackage:int = 0, crc=0) -> bytes:
@@ -125,7 +125,7 @@ class GeneratePackages:
     def generateType3(self, id):
         payload = self.getChunkData()
         # Generate CRC
-        generatedCRC = CRC16.calculate(payload)
+        generatedCRC = CRC16().calculate(payload)
         head = self.generateHead(messsageType=3, id=id, payloadSize=payload[5], crc=generatedCRC)
         package = head + payload[10:]
         return package

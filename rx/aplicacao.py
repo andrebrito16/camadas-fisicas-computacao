@@ -67,6 +67,7 @@ def main():
         # Envia uma mensagem do tipo 2 quando deixa de ser ocioso
         msgt2 = packages.generateType2()
         cont = 1
+        print(msgt2)
         com1.sendData(msgt2)
         log_generate.generateLine('envio', msgt2[0], len(msgt2), 0, totalNumberOfPackages)
         time.sleep(.2)
@@ -97,6 +98,7 @@ def main():
                     timer1 = time.time()
 
             head, _ = com1.getData(10)
+            print(f"HEAD: {head}")
             if head[0] == 3:
                 if cont == 2:
                     log_generate.generateLine('receb', 4, len(payload) + 14, 3, totalNumberOfPackages)
@@ -108,9 +110,12 @@ def main():
                 eop, _ = com1.getData(4)
                 log_generate.generateLine('receb', 3, len(payload) + 14, head[4], totalNumberOfPackages)
                 # Validate CRC
-                rawCRC = head[8:9]
-                expectedCrc = CRC16().calculate(payload).to_bytes(2, byteorder='big')[:-1]
-                if eop == EOP_REF and rawCRC == expectedCrc:
+                rawCRC = head[8:10]
+                print(f"RAW CRC: {rawCRC}")
+                expectedCrc = CRC16().calculate(payload).to_bytes(2, byteorder='big')
+                print(f"Expected CRC: {expectedCrc}")
+                if eop == EOP_REF:
+                    print("DEPOIS")
                     type4 = packages.generateType4(cont)
                     print(f"Type 4 7: {type4[7]} - CONTADOR: {cont}")
                     com1.sendData(type4)
@@ -119,7 +124,8 @@ def main():
                         cont = head[4] + 1
                         
                 else:
-                    com1.sendData(packages.generateType6(head[4]))
+                    print("CAINDO AQUI")
+                    com1.sendData(packages.generateType6())
             # else:
             #     com1.rx.clearBuffer()
 
