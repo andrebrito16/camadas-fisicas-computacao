@@ -5,6 +5,7 @@ import numpy as np
 import sounddevice as sd
 import matplotlib.pyplot as plt
 import math
+import time
 
 import sys
 
@@ -25,26 +26,29 @@ def main():
     NUM = int(input("Digite o número que você quer teclar (0 a 9): "))
 
     freqs = {
-        0: [697, 1209],
-        1: [697, 1336],
-        2: [697, 1477],
-        3: [770, 1209],
-        4: [770, 1336],
-        5: [770, 1477],
-        6: [852, 1209],
-        7: [852, 1336],
-        8: [852, 1477],
-        9: [941, 1209]
+        0: [941, 1336],
+        1: [697, 1209],
+        2: [697, 1336],
+        3: [697, 1477],
+        4: [770, 1209],
+        5: [770, 1336],
+        6: [770, 1477],
+        7: [852, 1209],
+        8: [852, 1336],
+        9: [852, 1477]
     }
 
     t_list = np.arange(0, 1, 1/44100)
-    A, f1, f2 = 1, 1209, 697 # Nota lá com aplitude 1
+    A, f1, f2 = 1, freqs[NUM][0], freqs[NUM][1] # Nota lá com aplitude 1
     sine_f1 = [A * math.sin(2 * np.pi * f1 * t) for t in t_list]
     sine_f2 = [A * math.sin(2 * np.pi * f2 * t) for t in t_list]
     # Função para gerar o sinal
     sine = [sine_f1[i] + sine_f2[i] for i in range(len(sine_f1))]
     # Reproduzindo o sinal
     fs = [f1, f2]
+
+    # Duração do sinal
+    duration = 5
 
 
 
