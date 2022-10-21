@@ -16,7 +16,7 @@ import time
 import numpy as np
 from utils_camadas.generatePackages import GeneratePackages
 from utils_camadas.generateLog import GenerateLog
-
+from PyCRC.CRC16 import CRC16
 # voce deverá descomentar e configurar a porta com através da qual ira fazer comunicaçao
 #   para saber a sua porta, execute no terminal :
 #   python -m serial.tools.list_ports
@@ -24,7 +24,7 @@ from utils_camadas.generateLog import GenerateLog
 
 # use uma das 3 opcoes para atribuir à variável a porta usada
 # serialName = "/dev/ttyACM0"           # Ubuntu (variacao de)
-serialName = "/dev/cu.usbmodem1442301"  # Mac    (variacao de)
+serialName = "/dev/cu.usbmodem1412401"  # Mac    (variacao de)
 # serialName = "COM4"                  # Windows(variacao de)
 handShakeSize = 14
 
@@ -67,6 +67,7 @@ def main():
         # Envia uma mensagem do tipo 2 quando deixa de ser ocioso
         msgt2 = packages.generateType2()
         cont = 1
+        print(msgt2)
         com1.sendData(msgt2)
         log_generate.generateLine('envio', msgt2[0], len(msgt2), 0, totalNumberOfPackages)
         time.sleep(.2)
@@ -97,6 +98,7 @@ def main():
                     timer1 = time.time()
 
             head, _ = com1.getData(10)
+            print(f"HEAD: {head}")
             if head[0] == 3:
                 if cont == 2:
                     log_generate.generateLine('receb', 4, len(payload) + 14, 3, totalNumberOfPackages)
@@ -107,7 +109,13 @@ def main():
                 all_packages.append(payload)
                 eop, _ = com1.getData(4)
                 log_generate.generateLine('receb', 3, len(payload) + 14, head[4], totalNumberOfPackages)
+                # Validate CRC
+                rawCRC = head[8:10]
+                print(f"RAW CRC: {rawCRC}")
+                expectedCrc = CRC16().calculate(payload).to_bytes(2, byteorder='big')
+                print(f"Expected CRC: {expectedCrc}")
                 if eop == EOP_REF:
+                    print("DEPOIS")
                     type4 = packages.generateType4(cont)
                     print(f"Type 4 7: {type4[7]} - CONTADOR: {cont}")
                     com1.sendData(type4)
@@ -116,7 +124,8 @@ def main():
                         cont = head[4] + 1
                         
                 else:
-                    com1.sendData(packages.generateType6(head[4]))
+                    print("CAINDO AQUI")
+                    com1.sendData(packages.generateType6())
             # else:
             #     com1.rx.clearBuffer()
 
