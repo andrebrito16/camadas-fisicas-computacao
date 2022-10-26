@@ -6,6 +6,7 @@ import sounddevice as sd
 import matplotlib.pyplot as plt
 import math
 import time
+import suaBibSignal
 
 import sys
 
@@ -24,7 +25,7 @@ def todB(s):
 
 def main():
     NUM = int(input("Digite o número que você quer teclar (0 a 9): "))
-
+    signal = suaBibSignal.signalMeu()
     freqs = {
         0: [941, 1336],
         1: [697, 1209],
@@ -38,7 +39,7 @@ def main():
         9: [852, 1477]
     }
 
-    t_list = np.arange(0, 1, 1/44100)
+    t_list = np.arange(0, 3, 1/44100)
     A, f1, f2 = 1, freqs[NUM][0], freqs[NUM][1] # Nota lá com aplitude 1
     sine_f1 = [A * math.sin(2 * np.pi * f1 * t) for t in t_list]
     sine_f2 = [A * math.sin(2 * np.pi * f2 * t) for t in t_list]
@@ -72,12 +73,26 @@ def main():
     print("Gerando Tons base")
     print("Executando as senoides (emitindo o som)")
     print("Gerando Tom referente ao símbolo : {}".format(NUM))
+    print(f"Gerando frequências : {f1}Hz e {f2}Hz")
+
     sd.play(sine, 44100)
+
+
+    signal.plotFFT(sine, 44100)
     # Exibe gráficos
+    plt.xlim(500, 1600)
+
+    
+    plt.show()
+
+    plt.plot(t_list, sine)
+    plt.xlim(0, 0.01)
     plt.show()
     # aguarda fim do audio
+
     sd.wait()
-    # plotFFT(self, signal, fs)
+    
+    
     
 
 if __name__ == "__main__":
