@@ -20,9 +20,6 @@ def todB(s):
     sdB = 10*np.log10(s)
     return(sdB)
 
-
-
-
 def main():
     NUM = int(input("Digite o número que você quer teclar (0 a 9): "))
     signal = suaBibSignal.signalMeu()
@@ -36,7 +33,8 @@ def main():
         6: [770, 1477],
         7: [852, 1209],
         8: [852, 1336],
-        9: [852, 1477]
+        9: [852, 1477],
+        10: [100, 2000]
     }
 
     t_list = np.arange(0, 3, 1/44100)
@@ -80,16 +78,21 @@ def main():
 
     signal.plotFFT(sine, 44100)
     # Exibe gráficos
-    plt.xlim(500, 1600)
-
-    
+    plt.xlim(500, 2000)
     plt.show()
 
+    # Plota o sinal
     plt.plot(t_list, sine)
     plt.xlim(0, 0.01)
     plt.show()
-    # aguarda fim do audio
 
+    # Plota spectrograma
+    plt.specgram(sine, Fs=44100, cmap='magma')
+    plt.xlim(0, 3)
+    plt.ylim(0, 5000)
+    plt.show()
+
+    # aguarda fim do audio
     sd.wait()
     
     
